@@ -43,13 +43,15 @@ def scaler(list_, element):
 
 def distribution_plot(list_of_probabilities, sample_probability):
     
-    plt.figure(figsize=(6,4))
+    plt.figure(figsize=(8,6))
     sns.set_style("whitegrid")
-    sns.distplot(list_of_probabilities, color = 'b', hist=False)
+    lower_limit = int(0.45 * len(list_of_probabilities))
+    sns.distplot(list_of_probabilities[lower_limit:], color = 'b', hist=False, kde_kws={'clip': (0.45, 1.0)})
+    plt.xticks([])
     avg_prob = round(np.average(list_of_probabilities),4)
     plt.axvline(avg_prob, color = 'r')
     plt.axvline(sample_probability, color = 'g')
-    plt.title("Distribution of Probabilities of Summary Judgment Being Affirmed\n", fontsize=18)
+    plt.title("Probabilities of Summary Judgment Being Affirmed\n", fontsize=18)
     plt.legend(["Average Probability: "+str(avg_prob), "Probability for Selected Case: "+str(sample_probability)], 
                loc='upper left')
     perc_change = round((sample_probability-avg_prob)/avg_prob*100,3)
@@ -107,18 +109,21 @@ def main():
 
     st.write('You selected: judge: '+str(judge)+', county: '+str(county)+', and case type: '+str(casetype))
    
-    if st.button("Predict"): 
+        if st.button("Predict"): 
         result = prediction(casetype, judge, county)
         scaled_pred = round(scaler(unscaled_probs_affirmed,result),4)
-        distribution_plot(unscaled_probs_affirmed, result)
+        distribution_plot(scaled_probs_affirmed, scaled_pred) #unscaled_probs_affirmed, result)
         avg_success = np.average(scaled_probs_affirmed)
         difference = round(((scaled_pred - avg_success)/avg_success)*100,2)
-        st.success("""The blue curve above represents the distribution of the probabilities of success;
-        the red line is the average probability of a successful motion being affirmed (presuming the legal 
-        standard is met).  Given the trial judge, county, and case type selected, your probability of being 
-        affirmed (indicated by the green line), assuming the legal standard is met, is {}% greater (if positive)
-        /worse (if negative) chance of than the average. \n\n The further the green line is from the red line, 
-        the more significant the effect of the judge/jurisdiction/case type on outcome.""".format(difference))
+        if difference > 0: 
+            greater = 'greater' 
+        else: 
+            greater = 'worse'
+        st.success("""Given the trial judge, county, and case type selected, your probability 
+        of being affirmed (indicated by the green line), assuming the legal standard is met, 
+        is {}% {} than the average. \n\n The blue curve above represents the 
+        distribution of the probabilities of success; the red line is the average probability 
+        of a successful motion being affirmed (presuming the legal standard is met).""".format(abs(difference), greater))
 
 
 if __name__=='__main__': 
